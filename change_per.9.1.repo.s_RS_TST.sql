@@ -1,0 +1,8 @@
+SELECT   DISTINCT 'pmrep AssignPermission -o deploymentgroup -n '|| REP_DEPLOY_GROUP_DETAIL.dep_group_name|| ' -u '|| REP_DEPLOY_GROUP.CREATED_BY || ' -p r ' AS pmrep
+  FROM   REP_DEPLOY_GROUP_DETAIL, REP_DEPLOY_GROUP
+ WHERE   REP_DEPLOY_GROUP_DETAIL.target_rep_name = 'RS_TST'
+         AND REP_DEPLOY_GROUP_DETAIL.dep_group_name = REP_DEPLOY_GROUP.dep_group_name
+         AND REP_DEPLOY_GROUP.OWNER_ID <> 2
+         AND TO_DATE (REP_DEPLOY_GROUP.CREATION_TIME,'MM/DD/YYYY HH24:MI:SS') < (SYSDATE)
+         AND TO_DATE (REP_DEPLOY_GROUP.CREATION_TIME,'MM/DD/YYYY HH24:MI:SS') > (SYSDATE - 250)    
+        

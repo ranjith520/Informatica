@@ -1,0 +1,32 @@
+#---------------------------------------------------------------------
+#SCRIPT:	change_to_admin.sql
+#PURPOSE:	This script generates PMREP command for changing deployment group owner to admin
+#		 for previous month. 
+#
+#Created by:	Ranjith Gade 
+#Created on:	09/26/2011
+#Modified on:	
+#
+#---------------------------------------------------------------------
+sqlplus -s /nolog <<ENDSQL
+connect infadmin8@infm2dev.cigna.com/cigna2009
+WHENEVER SQLERROR EXIT 5
+WHENEVER OSERROR EXIT 10
+set echo off
+set termout off
+set feedback off
+set linesize 150
+set pagesize 1 
+set newpage none
+column PMREP_COMMAND format A38
+set trimout on
+set trimspool on
+set embedded on
+set underline off
+set colsep ','
+SPOOL /usr/local/apps/informatica_8/Metrics/CHANGE_OWNER.csv
+@change_owner.sql
+disconnect
+SPOOL OFF
+EXIT;
+ENDSQL
