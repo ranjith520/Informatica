@@ -1,0 +1,3 @@
+# Informatica
+Informatica Admin Tasks ,
+Roles and Day to Day Activities Etc...
