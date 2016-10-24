@@ -1,0 +1,909 @@
+
+Informatica Knowledge Base
+
+Informatica Repository Schema Queries
+
+PowerCenter query returns all PowerCenter mappings with update strategy transformations using repository views:
+
+SELECT DISTINCT(PARENT_MAPPING_NAME) AS MAPPING_NAME, SUBJECT_AREA AS FOLDER_NAME FROM REP_ALL_MAPPINGS A, REP_WIDGET_INST B WHERE A.PARENT_MAPPING_ID = B.MAPPING_ID AND A.PARENT_SUBJECT_ID=B.SUBJECT_ID AND B.WIDGET_TYPE=4;
+
+
+PowerCenter repository query that lists all sources (whether they are used in a mapping or not) and any mappings the source is used in a repository:
+
+SELECT REP_ALL_SOURCES.SOURCE_NAME, REP_SRC_MAPPING.MAPPING_NAME, REP_ALL_SOURCES.SOURCE_DATABASE_NAME FROM REP_SRC_MAPPING, REP_ALL_SOURCES WHERE REP_SRC_MAPPING.SOURCE_ID(+) = REP_ALL_SOURCES.SOURCE_ID and REP_SRC_MAPPING.SOURCE_NAME(+) = REP_ALL_SOURCES.PARENT_SOURCE_NAME and REP_SRC_MAPPING.SUBJECT_ID(+) = REP_ALL_SOURCES.SUBJECT_ID
+
+The Sequence Generator stores values in the repository.
+
+Following is a query for current value of all Sequence Generator within a repository:
+
+SELECT a.attr_value AS current_value , b.WIDGET_NAME AS Transformation_name
+
+FROM rep_widget_attr a , REP_ALL_TRANSFORMS b
+
+WHERE a.attr_id=4 AND a.widget_id IN (SELECT widget_id FROM REP_ALL_TRANSFORMS WHERE widget_type_name LIKE 'Sequence') AND a.widget_id=b.widget_id
+
+
+
+For a specific current value attribute of Sequence Generator, replace ' sequence_generator_transformation_name ' in the following query with transformation name:
+
+
+
+SELECT a.attr_value AS current_value , b.WIDGET_NAME AS Transformation_name FROM rep_widget_attr a , REP_ALL_TRANSFORMS b WHERE a.attr_id=4 AND a.widget_id IN (SELECT widget_id FROM REP_ALL_TRANSFORMS WHERE widget_type_name LIKE 'Sequence') AND a.widget_id=b.widget_id AND b.widget_name LIKE ' sequence_generator_transformation_name '
+
+For all or another attribute (other than current_value ) of Sequence Generator transformation, run the following query:
+
+SELECT a.* , b.WIDGET_NAME AS Transformation_name
+
+FROM rep_widget_attr a , REP_ALL_TRANSFORMS b
+
+WHERE a.attr_id=4 AND a.widget_id IN (SELECT widget_id FROM REP_ALL_TRANSFORMS WHERE widget_type_name LIKE 'Sequence') AND a.widget_id=b.widget_id
+
+To include the version number:
+
+SELECT a.attr_value AS current_value , b.WIDGET_NAME AS Transformation_name, a.VERSION_NUMBER
+
+FROM rep_widget_attr a , REP_ALL_TRANSFORMS b
+
+WHERE a.attr_id=4 AND a.widget_id IN (SELECT widget_id FROM REP_ALL_TRANSFORMS WHERE widget_type_name LIKE 'Sequence') AND a.widget_id=b.widget_id
+
+Order by a.VERSION_NUMBER DESC
+
+PowerCenter query returns lookup connection information using repository views:
+
+
+
+SELECT f.SUBJECT_AREA AS "Folder", m.MAPPING_NAME AS "Mapping", s.INSTANCE_NAME AS "Transformation", a.ATTR_VALUE AS "connection"
+
+FROM REP_ALL_MAPPINGS m, REP_WIDGET_INST s, REP_WIDGET_ATTR a, REP_SUBJECT f
+
+WHERE f.SUBJECT_ID = m.SUBJECT_ID AND m.MAPPING_ID = s.MAPPING_ID AND s.WIDGET_TYPE = 11 AND s.WIDGET_ID = a.WIDGET_ID AND a.ATTR_ID = 6
+
+The following query returns all the post session commands used inside each session of the repository:
+
+
+
+SELECT a.task_name,c.subj_name AS Folder_name, b.PM_value AS command_value
+
+FROM OPB_TASK a,OPB_TASK_VAL_LIST b, OPB_SUBJECT c
+
+WHERE a.task_type=58 AND a.task_name='post_session_command'
+
+AND b.task_id=a.task_id AND b.subject_id=c.subj_id
+
+The following query returns all the post session success commands used inside each session of the repository:
+
+SELECT a.task_name,c.subj_name AS Folder_name, b.PM_value AS command_value
+
+FROM OPB_TASK a,OPB_TASK_VAL_LIST b, OPB_SUBJECT c
+
+WHERE a.task_type=58 AND a.task_name='post_session_success_command'
+
+AND b.task_id=a.task_id AND b.subject_id=c.subj_id
+
+
+
+The following query returns all the post session failure commands used inside each session of the repository:
+
+SELECT a.task_name,c.subj_name AS Folder_name, b.PM_value AS command_value
+
+FROM OPB_TASK a,OPB_TASK_VAL_LIST b, OPB_SUBJECT c
+
+WHERE a.task_type=58 AND a.task_name='post_session_failure_command'
+
+AND b.task_id=a.task_id AND b.subject_id=c.subj_id
+
+PowerCenter query can be used to find all version comments in a PowerCenter repository
+
+select s.subject_area, s.subject_id, r.comments, r.object_name, r.version_number, r.object_type, r.user_id, r.saved_from
+
+from rep_version_props r, rep_subject s
+
+where s.SUBJECT_ID = r.subject_id
+
+AND r.comments is not null;
+
+• OBJECT_TYPE - Type of the versioned object.
+
+• VERSION_NUMBER - version number of the object.
+
+• SUBJECT_ID - subject Id of the object.
+
+• USER_ID - User Id who checked in this version of the object.
+
+• OBJECT_NAME - Name of the object.
+
+• COMMENTS - checkin comments.
+
+• SAVED_FROM - saved from which client.
+
+• Subject_area - folder name
+
+
+
+PowerCenter Repository Query to fetch Source/Target Connection Information:
+
+SELECT
+
+DISTINCT ALL_SESSIONS.SUBJECT_AREA FOLDER_NAME,ALL_SESSIONS.MAPPING_NAME MAPPING_NAME, ALL_SESSIONS.SESSION_NAME SESSION_NAME,
+
+SESSION_ALL_CNXS.READER_WRITER_TYPE, SESSION_ALL_CNXS.INSTANCE_NAME, SESSION_ALL_CNXS.CNX_NAME,
+
+CASE
+
+WHEN SESSION_ALL_CNXS.WIDGET_TYPE = 2 THEN 'TARGET CONNECTION'
+
+ELSE
+
+CASE
+
+WHEN SESSION_ALL_CNXS.WIDGET_TYPE IN (1,3,56,45,55,84) THEN 'SOURCE CONNECTION'
+
+ELSE
+
+NULL
+
+END
+
+END,
+
+SESSION_USERS.USER_NAME
+
+FROM
+
+REP_VERSION_PROPS SESSION_VERSION_PROPS,
+
+REP_USERS SESSION_USERS, REP_LOAD_SESSIONS ALL_SESSIONS,
+
+REP_REPOSIT_INFO SESSION_REPOSIT_INFO, REP_SESS_WIDGET_CNXS SESSION_ALL_CNXS
+
+WHERE
+
+(SESSION_VERSION_PROPS.USER_ID = SESSION_USERS.USER_ID AND
+
+ALL_SESSIONS.SESSION_ID <> SESSION_REPOSIT_INFO.REPOSITORY_ID AND
+
+ALL_SESSIONS.SESSION_ID = SESSION_VERSION_PROPS.OBJECT_ID AND
+
+ALL_SESSIONS.SUBJECT_ID = SESSION_VERSION_PROPS.SUBJECT_ID AND
+
+SESSION_VERSION_PROPS.OBJECT_TYPE = 68 AND
+
+ALL_SESSIONS.SESSION_ID = SESSION_ALL_CNXS.SESSION_ID AND
+
+ALL_SESSIONS.SESSION_VERSION_NUMBER = SESSION_ALL_CNXS.SESSION_VERSION_NUMBER)
+
+
+
+PowerCenter query created using repository view that extracts all Lookup transformations in a folder and their associated lookup tables:
+
+SELECT
+
+f.SUBJECT_AREA AS "Folder Name", m.MAPPING_NAME AS "Mapping Name", s.INSTANCE_NAME AS "Transformation Name", a.ATTR_VALUE AS "Query"
+
+FROM
+
+REP_ALL_MAPPINGS m, REP_SUBJECT f, REP_WIDGET_INST s, REP_WIDGET_ATTR a
+
+WHERE
+
+f.SUBJECT_ID = m.SUBJECT_ID and m.MAPPING_ID = s.MAPPING_ID and s.WIDGET_TYPE = 11 and s.WIDGET_ID = a.WIDGET_ID and a.ATTR_ID = 2 and f.SUBJECT_AREA = 'Folder_name'
+
+PowerCenter repository query that returns the the number of sessions that ran on a specific day for each PowerCenter Integration Service:
+
+SELECT COUNT(*), SERVER_NAME
+
+FROM REP_TASK_INST_RUN WHERE TO_CHAR(START_TIME,'mm/dd/yyyy') = '12/10/2007' GROUP BY SERVER_NAME
+
+PowerCenter query will return objects, whose status is not enabled:
+
+SELECT *
+
+FROM rep_all_tasks a, rep_workflows b
+
+WHERE a.subject_id = b.subject_id
+
+AND a.task_id = b.workflow_id
+
+AND b.workflow_version_number = (SELECT max(c.workflow_version_number)
+
+FROM rep_workflows c
+
+WHERE c.workflow_id = b.workflow_id)
+
+AND a.is_enabled = 0;
+
+This query returns the most recent version of the objects (for versioned repositories).
+
+PowerCenter repository query used in PowerCenter to find all the emails with attachment either used as part of email task or post-session commands:
+
+SELECT DISTINCT D.SUBJ_NAME FOLDER_NAME, C.WORKFLOW_NAME, A.TASK_NAME TASK_NAME, B.ATTR_VALUE FROM OPB_TASK A, OPB_TASK_ATTR B, REP_TASK_INST_RUN C, OPB_SUBJECT D WHERE A.TASK_ID = B.TASK_ID AND A.TASK_TYPE = B.TASK_TYPE AND C.SUBJECT_ID = A.SUBJECT_ID AND A.SUBJECT_ID = d.SUBJ_ID AND A.TASK_TYPE = 65 AND B.ATTR_ID in (2,3) AND (B.ATTR_VALUE like '%\%a%' ESCAPE '\' OR B.ATTR_VALUE like '%\%g%' ESCAPE '\');
+
+PowerCenter Query to get the user_name that last updated a workflow/mapping
+
+The repository table REP_VERSION_PROPS, provides information about the history of user_id, object_name, last_saved, saved_from etc of the user who last modified this version of the object. You can query this table for the object and get the user_id to find the user_name from the REP_USERS table.
+
+select a.user_name,b.last_saved,b.object_name from rep_users a,rep_version_props b where b.object_name='objectname'and a.user_id=b.user_id
+
+This way you can find the user who last modified this version of the object.
+
+MX repository views that returns the run details for a worklet in a specific workflow for a particular time period:
+
+SELECT DISTINCT WORKLET_RUN.WORKFLOW_NAME,ALL_WORKLETS.TASK_NAME, WORKLET_RUN.START_TIME, WORKLET_RUN.END_TIME
+
+FROM REP_ALL_TASKS ALL_WORKLETS, REP_TASK_INST_RUN WORKLET_RUN
+
+WHERE (ALL_WORKLETS.TASK_ID = WORKLET_RUN.TASK_ID AND
+
+ALL_WORKLETS.VERSION_NUMBER = WORKLET_RUN.TASK_VERSION_NUMBER ) AND
+
+(WORKLET_RUN.WORKFLOW_NAME = 'workflow_name' AND
+
+WORKLET_RUN.START_TIME > TO_DATE('03/12/2008 18:00:00','MM/DD/YYYY HH24:MI:SS') AND ALL_WORKLETS.TASK_NAME like 'workletname%' )
+
+ORDER BY
+
+WORKLET_RUN.START_TIME
+
+PowerCenter query returns a list of all PowerCenter (8.1.x and earlier) repository users belonging to the Administrator group:
+
+SELECT USER_NAME,REP_GROUPS.GROUP_NAME
+
+FROM REP_USERS,REP_GROUPS, REP_USER_GROUPS
+
+WHERE REP_GROUPS.GROUP_ID = 2
+
+AND REP_USERS.USER_ID = REP_USER_GROUPS.USER_ID
+
+AND REP_GROUPS.GROUP_ID = REP_USER_GROUPS.GROUP_ID
+
+PowerCenter query to find the reusable transformations in the repository :
+
+SELECT DISTINCT B.MAPPING_NAME, A.*
+
+FROM REP_ALL_TRANSFORMS A, REP_WIDGET_INST C, REP_ALL_MAPPINGS B
+
+WHERE PARENT_WIDGET_IS_REUSABLE = 1
+
+AND A.PARENT_WIDGET_ID = C.WIDGET_ID
+
+AND B.MAPPING_ID = C.MAPPING_ID
+
+PowerCenter query lists all workflows and the name of each workflow's associated Integration Service. If no Integration Service is assigned then the SERVER_NAME column will not have any value.
+
+SELECT WORKFLOW_NAME,SERVER_NAME FROM REP_WORKFLOWS
+
+PowerCenter Query a repository to find Workflows that use a scheduler
+
+If you query the REP_WORKFLOWS view, you can retrieve the workflows that use a scheduler. Following is the query:
+
+select workflow_name, scheduler_name from rep_workflows where scheduler_name is not null;
+
+Following is the Workflows query for reusable schedulers:
+
+select workflow_name, scheduler_name from rep_workflows where scheduler_is_reusable = '1';
+
+Following is the Workflow query for a particular name:
+
+select workflow_name, scheduler_name from rep_workflows where scheduler_name = '
+
+
+
+PowerCenter Query to list the current memory settings (buffer block size, etc.) for all sessions in a PowerCenter repository using a repository query
+
+This information can be obtained from the REP_TASK_ATTR and REP_SESS_CONFIG_PARM views, and the following query returns the values set for DTM buffer size, buffer block size, and line sequential buffer length for each session:
+
+SELECT a.SUBJECT_AREA AS Folder_Name, a.task_name AS Session_Name, b.ATTR_VALUE AS DTM_BUFFER_SIZE, c.ATTR_VALUE AS Buffer_Block_Size,
+
+d.ATTR_VALUE AS Line_Sequential_Buffer_Length
+
+FROM REP_ALL_TASKS a, REP_TASK_ATTR b, REP_SESS_CONFIG_PARM c, REP_SESS_CONFIG_PARM d
+
+WHERE a.TASK_ID = b.TASK_ID
+
+AND a.TASK_ID = c.SESSION_ID
+
+AND a.TASK_ID = d.SESSION_ID
+
+AND b.ATTR_ID = 101
+
+AND c.ATTR_ID = 5
+
+AND d.ATTR_ID = 6
+
+ORDER BY 1, 2
+
+
+
+PowerCenter query can be used to determine session connections and memory properties in the PowerCenter repository
+
+The following query can be used to obtain the memory information:
+
+SELECT ATTR_NAME, ATTR_VALUE,SESSION_INSTANCE_NAME
+
+FROM REP_SESS_CONFIG_PARM,REP_SESSION_INSTANCES
+
+WHERE REP_SESS_CONFIG_PARM.SESSION_ID = REP_SESSION_INSTANCES.SESSION_ID
+
+For connection details you can use the following query:
+
+SELECT CNX_NAME
+
+FROM REP_SESS_WIDGET_CNXS,REP_SESSION_INSTANCES
+
+WHERE REP_SESSION_INSTANCES .SESSION_INSTANCE_NAME = REP_SESS_WIDGET_CNXS.INSTANCE_NAME
+
+
+
+PowerCenter Query to get the list of source and target for a particular mapping, use the following query:
+
+select DISTINCT
+
+MAPP.SUBJECT_AREA FOLDER_NAME,
+
+MAPP.MAPPING_NAME MAPPING_NAME,
+
+DECODE(WINST.WIDGET_TYPE, '1', 'SOURCE', '2', 'TARGET') SOURCE_TARGET,
+
+WINST.INSTANCE_NAME SOURCE_TARGET_NAME
+
+from REP_ALL_MAPPINGS MAPP,
+
+REP_WIDGET_INST WINST
+
+where MAPP.MAPPING_ID = WINST.MAPPING_ID and
+
+WINST.WIDGET_TYPE in (1,2)
+
+Power Center query to get the workflows that have not been run from a particular date.
+
+select distinct subject_area , workflow_name from rep_task_inst_run where
+
+workflow_name not in (select workflow_name from rep_task_inst_run where
+
+start_time > sysdate - 1 )
+
+order by 1,2
+
+Where, the start_time filter condition can be altered to the required date to filter as per the needs.
+
+PowerCenter query to display the current value of all reusable and non-reusable Sequence Generators in mappings:
+
+SELECT
+
+B.SUBJECT_AREA AS FOLDER,
+
+M.MAPPING_NAME,
+
+A.ATTR_VALUE AS CURRENT_VALUE,
+
+B.WIDGET_NAME AS TRANSFORMATION_NAME
+
+FROM REP_WIDGET_ATTR A , REP_ALL_TRANSFORMS B, REP_WIDGET_INST W, REP_ALL_MAPPINGS M
+
+WHERE
+
+A.ATTR_ID=4
+
+AND
+
+A.WIDGET_ID IN (SELECT WIDGET_ID FROM REP_ALL_TRANSFORMS WHERE WIDGET_TYPE_NAME LIKE 'Sequence')
+
+AND
+
+A.WIDGET_ID = B.WIDGET_ID
+
+AND
+
+W.WIDGET_ID = A.WIDGET_ID
+
+AND
+
+W.WIDGET_TYPE = 7
+
+AND
+
+W.MAPPING_ID = M.MAPPING_ID
+
+PowerCenter query to display the current value of all reusable Sequence Generators in mapplets:
+
+SELECT
+
+B.SUBJECT_AREA AS FOLDER,
+
+M.MAPPLET_NAME, A.ATTR_VALUE AS CURRENT_VALUE, B.WIDGET_NAME AS TRANSFORMATION_NAME
+
+FROM REP_WIDGET_ATTR A , REP_ALL_TRANSFORMS B, REP_WIDGET_INST W, REP_ALL_MAPPLETS M
+
+WHERE A.ATTR_ID=4
+
+AND
+
+A.WIDGET_ID IN (SELECT WIDGET_ID FROM REP_ALL_TRANSFORMS WHERE WIDGET_TYPE_NAME LIKE 'Sequence')
+
+AND
+
+A.WIDGET_ID = B.WIDGET_ID
+
+AND
+
+W.WIDGET_ID = A.WIDGET_ID
+
+AND
+
+W.WIDGET_TYPE = 7
+
+AND
+
+W.MAPPING_ID = M.MAPPLET_ID
+
+PowerCenter query to get Lookup SQL Override and SQL Query of Lookup Procedure and Source Qualifier transformations respectively at mapping level:
+
+SELECT DISTINCT D.SUBJECT_AREA FOLDER, D.MAPPING_NAME, A.WIDGET_TYPE_NAME TRANSFORMATION_TYPE, A.INSTANCE_NAME TRANSFORMATION_NAME, B.ATTR_NAME, B.ATTR_VALUE, C.SESSION_NAME FROM REP_WIDGET_INST A, REP_WIDGET_ATTR B, REP_LOAD_SESSIONS C, REP_ALL_MAPPINGS D WHERE B.WIDGET_ID = A. WIDGET_ID AND B.WIDGET_TYPE = A. WIDGET_TYPE AND B.WIDGET_TYPE IN (3, 11) AND C.MAPPING_ID = A.MAPPING_ID AND D.MAPPING_ID = A.MAPPING_ID AND B.ATTR_ID= 1 AND B.ATTR_DATATYPE=2 AND B.ATTR_TYPE=3 ORDER BY D.SUBJECT_AREA, D.MAPPING_NAME
+
+Power Center Query to get the following details:
+
+• Mapping Name
+
+• Sequence Generator used within a mapping
+
+• Current Sequence generator value
+
+• Session Name and
+
+• Workflow Name
+
+
+
+SELECT DISTINCT MAPPING_ALL_TRANSFORMS.WIDGET_NAME, MAPPING_ALL_TRANSFORMS.WIDGET_TYPE_NAME, ALL_MAPPINGS.MAPPING_NAME, MAPPING_SESSION_INSTANCES.SESSION_INSTANCE_NAME, MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_NAME,
+
+CASE WHEN MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_DATATYPE IN (1,4) THEN CASE WHEN MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_TYPE = 5 THEN CASE WHEN MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_VALUE = 1 THEN 'Yes' ELSE 'No' END ELSE MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_VALUE END ELSE MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_VALUE END
+
+FROM REP_WIDGET_INST MAPPING_WIDGET_INST, REP_ALL_TRANSFORMS MAPPING_ALL_TRANSFORMS, REP_SESSION_INSTANCES MAPPING_SESSION_INSTANCES, REP_WIDGET_ATTR MAPPING_TRANSFORM_WIDGET_ATTR, REP_ALL_MAPPINGS ALL_MAPPINGS
+
+LEFT OUTER JOIN REP_SESS_PARTITION_DEF MAPPING_SESS_PARTITION_DEF ON ALL_MAPPINGS.PARENT_MAPPING_ID = MAPPING_SESS_PARTITION_DEF.MAPPING_ID
+
+WHERE (ALL_MAPPINGS.PARENT_MAPPING_ID = MAPPING_WIDGET_INST.MAPPING_ID AND ALL_MAPPINGS.PARENT_MAPPING_VERSION_NUMBER = MAPPING_WIDGET_INST.VERSION_NUMBER AND ALL_MAPPINGS.SUBJECT_ID = MAPPING_WIDGET_INST.SUBJECT_ID AND MAPPING_ALL_TRANSFORMS.PARENT_WIDGET_ID = MAPPING_WIDGET_INST.WIDGET_ID AND MAPPING_ALL_TRANSFORMS.SUBJECT_ID = MAPPING_WIDGET_INST.SUBJECT_ID AND MAPPING_ALL_TRANSFORMS.WIDGET_TYPE_ID = MAPPING_WIDGET_INST.WIDGET_TYPE AND MAPPING_SESSION_INSTANCES.SESSION_ID = MAPPING_SESS_PARTITION_DEF.SESSION_ID AND MAPPING_SESSION_INSTANCES.SESSION_VERSION_NUMBER = MAPPING_SESS_PARTITION_DEF.VERSION_NUMBER AND MAPPING_WIDGET_INST.WIDGET_ID = MAPPING_TRANSFORM_WIDGET_ATTR.WIDGET_ID AND MAPPING_WIDGET_INST.WIDGET_TYPE = MAPPING_TRANSFORM_WIDGET_ATTR.WIDGET_TYPE AND MAPPING_TRANSFORM_WIDGET_ATTR.SESSION_TASK_ID = 0 AND MAPPING_TRANSFORM_WIDGET_ATTR.WIDGET_TYPE NOT IN (1,2,44)) AND (MAPPING_ALL_TRANSFORMS.WIDGET_TYPE_NAME IN ('Sequence') AND MAPPING_TRANSFORM_WIDGET_ATTR.ATTR_NAME IN ('Current Value') )
+
+PowerCenter query on the repository views to get the mapping which has sorter transformation:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name, c.mapping_name,
+
+d.instance_name transformation_name
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b,REP_LOAD_SESSIONS c,REP_WIDGET_INST d
+
+WHERE a.subject_id= c.subject_id AND a.task_type=71 AND a.task_id=b.workflow_id
+
+AND b.task_type=68 AND b.task_id=c.session_id
+
+AND c.mapping_id=d.mapping_id
+
+AND d.widget_type=80
+
+PowerCenter query to list the users, their status (Active/In-Active) and the associated Group for 8.1.1 repository version.
+
+Select USER_NAME, DECODE(USER_ISENABLED,0,'IN-Active','Active') as "Status", GROUP_NAME, USER_DESCRIPTION from REP_USERS u, REP_GROUPS g,
+
+REP_USER_GROUPS ug
+
+Where
+
+ug.USER_ID = u.USER_ID AND
+
+g.GROUP_ID = ug.GROUP_ID
+
+
+
+Check if the non versioned repository contains versioned objects, which may be induced due to Repository Service bugs
+
+In some cases, a non versioned repository service converts into a versioned repository service without having a team-based development license option.
+
+The following error appears when the repository service is restarted:
+
+REP_51849 : A versioned repository cannot be started or restored without a team-based development license key.
+
+Run the following queries against the Repository Service Database schema of the non versioned repository:
+
+SELECT * FROM OPB_MACRO WHERE version_number>1
+
+SELECT * FROM OPB_MAPPING WHERE version_number>1
+
+SELECT * FROM OPB_MD_CUBE WHERE version_number>1
+
+SELECT * FROM OPB_MD_DIMENSION WHERE version_number>1
+
+SELECT * FROM OPB_SCHEDULER WHERE version_number>1
+
+SELECT * FROM OPB_SESSION_CONFIG WHERE version_number>1
+
+SELECT * FROM OPB_SHORTCUT WHERE version_number>1
+
+SELECT * FROM OPB_SRC WHERE version_number>1
+
+SELECT * FROM OPB_SUBJECT WHERE version_number>1
+
+SELECT * FROM OPB_TARG WHERE version_number>1
+
+SELECT * FROM OPB_TASK WHERE version_number>1
+
+SELECT * FROM OPB_WIDGET WHERE version_number>1
+
+If the above queries return a set of rows, it can indicate that there is a bug. Contact Informatica Global Customer Support for further assistance.
+
+
+
+PowerCenter query returns all sessions with the "$DB" connection name as the connection object:
+
+SELECT A.CNX_NAME, B.SESSION_NAME
+
+FROM REP_SESS_WIDGET_CNXS A, REP_LOAD_SESSIONS B
+
+WHERE A.SESSION_ID=B.SESSION_ID AND A.CNX_NAME LIKE '%$%'
+
+PowerCenter query to return the start and end time for 5 previous runs of a workflow:
+
+SELECT *
+
+FROM REP_WFLOW_RUN
+
+WHERE WORKFLOW_NAME LIKE '' AND rownum < 6
+
+ORDER BY WORKFLOW_RUN_ID DESC
+
+PowerCenter query to find the source name in a mapping:
+
+SELECT * from rep_src_mapping
+
+where mapping_name= 
+
+and subject_area like ;
+
+PowerCenter query to generate a report of the SQL Overrides using the MX views:
+
+SELECT RAM.SUBJECT_ID,RAM.MAPPING_NAME, RWA.ATTR_NAME, RWA.ATTR_VALUE
+
+FROM REP_WIDGET_ATTR RWA, REP_ALL_MAPPINGS RAM,
+
+(SELECT SUBJECT_ID FROM REP_SUBJECT WHERE SUBJECT_AREA = '') X
+
+WHERE RWA.ATTR_NAME LIKE '%Sql Override'
+
+AND RAM.MAPPING_ID = RWA.MAPPING_ID
+
+AND RAM.SUBJECT_ID = X.SUBJECT_ID
+
+AND RWA.ATTR_VALUE IS NOT NULL
+
+Where is the name of a specific folder in the repository.
+
+PowerCenter Query to list all the parameters and variables used in mappings and workflows in the repository:
+
+SELECT DISTINCT F.SUBJ_NAME AS FOLDER_NAME,
+
+M.MAPPING_NAME AS Object_Name, 'Mapping' AS Object_Type ,
+
+P.PV_NAME AS PARAMETER_OR_VARIABLE_NAME,
+
+(CASE WHEN P.PV_FLAG=2 THEN 'Parameter'WHEN P.PV_FLAG=3 THEN 'Variable' END) AS "TYPE" FROM OPB_SUBJECT F, OPB_MAPPING M, OPB_MAP_PARMVAR P WHERE F.SUBJ_ID = M.SUBJECT_ID
+
+AND M.MAPPING_ID = P.MAPPING_ID
+
+AND F.SUBJ_ID = P.SUBJECT_ID
+
+UNION
+
+SELECT DISTINCT F.SUBJ_NAME AS FOLDER_NAME,
+
+WFR.WORKFLOW_NAME AS Object_Name,
+
+'WorkFlow' AS Object_Type ,
+
+WP.VAR_NAME,
+
+(CASE WHEN WP.VAR_TYPE=1 THEN 'User_Defined' END) AS "TYPE"
+
+FROM OPB_SUBJECT F, OPB_WORKFLOW WF, OPB_WFLOW_VAR WP , OPB_WFLOW_RUN WFR
+
+WHERE WF.WORKFLOW_ID = WP.WORKFLOW_ID
+
+AND F.SUBJ_ID = WP.SUBJECT_ID
+
+AND WFR.WORKFLOW_ID = WF.WORKFLOW_ID
+
+AND WP.VAR_TYPE <> '0'
+
+ORDER BY Object_Type
+
+If it is not required to view the objects already deleted from the repository, then use the following query:
+
+SELECT DISTINCT F.SUBJ_NAME AS FOLDER_NAME,
+
+M.MAPPING_NAME AS Object_Name, 'Mapping' AS Object_Type ,
+
+P.PV_NAME AS PARAMETER_OR_VARIABLE_NAME,
+
+(CASE WHEN P.PV_FLAG=2 THEN 'Parameter'WHEN P.PV_FLAG=3 THEN 'Variable' END) AS "TYPE"
+
+FROM OPB_SUBJECT F, OPB_MAPPING M, OPB_MAP_PARMVAR P WHERE F.SUBJ_ID = M.SUBJECT_ID
+
+AND M.MAPPING_ID = P.MAPPING_ID
+
+AND F.SUBJ_ID = P.SUBJECT_ID
+
+AND M.MAPPING_NAME NOT IN (SELECT MAPPING_NAME FROM OPB_MAPPING WHERE VERSION_STATUS = 10)
+
+UNION
+
+SELECT DISTINCT F.SUBJ_NAME AS FOLDER_NAME,
+
+WFR.WORKFLOW_NAME AS Object_Name,
+
+'WorkFlow' AS Object_Type ,
+
+WP.VAR_NAME,
+
+(CASE WHEN WP.VAR_TYPE=1 THEN 'User_Defined' END) AS "TYPE"
+
+FROM OPB_SUBJECT F, OPB_WORKFLOW WF, OPB_WFLOW_VAR WP , OPB_WFLOW_RUN WFR
+
+WHERE WF.WORKFLOW_ID = WP.WORKFLOW_ID
+
+AND F.SUBJ_ID = WP.SUBJECT_ID
+
+AND WFR.WORKFLOW_ID = WF.WORKFLOW_ID
+
+AND WP.VAR_TYPE <> '0'
+
+AND WFR.WORKFLOW_NAME NOT IN (SELECT TASK_NAME FROM OPB_TASK WHERE VERSION_STATUS = 10)
+
+ORDER BY Object_Type
+
+To list all unscheduled workflows in a PowerCenter repository do the following:
+
+1. Run the following query which returns all the scheduled workflows in the repository:
+
+select workflow_name, scheduler_name from rep_workflows where scheduler_name is not null;
+
+2. Run the pmcmd command to get the currently scheduled workflows for each integration service connecting to the repository.
+
+pmcmd getservicedetails -sv -u -p -scheduled -d 
+
+3. The workflow names in step 1 which are not in step 2 are the unscheduled workflows, provided all workflows are scheduled initially.
+
+PowerCenter query to determine if a particular table is being used as a source or target or lookup:
+
+SELECT PARENT_SUBJECT_AREA FOLDER, PARENT_MAPPING_NAME MAPPING
+
+FROM REP_ALL_MAPPINGS
+
+WHERE MAPPING_ID IN (
+
+SELECT MAPPING_ID FROM REP_WIDGET_INST
+
+WHERE WIDGET_ID IN (
+
+SELECT WIDGET_ID FROM REP_WIDGET_ATTR
+
+WHERE (WIDGET_TYPE = 11 OR WIDGET_TYPE = 1 OR WIDGET_TYPE = 2) AND (ATTR_ID = 2 OR ATTR_ID = 31 OR ATTR_ID = 19) AND ATTR_VALUE = '' AND WIDGET_ID IN (
+
+SELECT WIDGET_ID FROM REP_ALL_TRANSFORMS
+
+WHERE
+
+PARENT_SUBJECT_AREA = '')))
+
+PowerCenter query to get a list of sessions and folders in a repository:
+
+SELECT DISTINCT (TASK_NAME), TASK_TYPE_NAME, SUBJECT_AREA
+
+FROM REP_ALL_TASKS WHERE TASK_TYPE_NAME = 'Session'
+
+ORDER BY SUBJECT_AREA
+
+PowerCenter query will returns mapping information with associated folders, workflows, and sessions:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name, c.mapping_name
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b,REP_LOAD_SESSIONS c
+
+WHERE a.subject_id=c.subject_id AND a.task_type=71
+
+AND a.task_id=b.workflow_id AND b.task_type=68 AND b.task_id=c.session_id
+
+AND c.MAPPING_ID <> 0
+
+ORDER BY 1,2,3,4
+
+PowerCenter query given below to list all the SAP sources in a repository.
+
+SELECT * FROM REP_ALL_SOURCES where PARENT_SOURCE_DATABASE_TYPE like 'SAP%'
+
+PowerCenter query to generate a list of failed sessions by running a query against the MX views.
+
+SELECT
+
+rsl.subject_area as folder,
+
+rw.workflow_name as workflow,
+
+rsl.session_name as session_name,
+
+decode(rsl.run_status_code,3,'Failed',4,'Stopped',5,'Aborted',15,'Terminated','Unknown') as status,
+
+rsl.first_error_code as first_error,
+
+rsl.first_error_msg as error_msg,
+
+rsl.actual_start as start_time,
+
+rsl.session_timestamp as end_time
+
+FROM rep_sess_log rsl,
+
+rep_workflows rw
+
+WHERE rsl.run_status_code in (3,4,5,14,15)
+
+and rw.workflow_id = rsl.workflow_id
+
+and rw.subject_id = rsl.subject_id
+
+ORDER BY rsl.session_timestamp desc
+
+This query will return the list of sessions that did not complete successfully, ordered by time. This is a basic query that can be modified by the user(s) to suit their needs.
+
+Power Center query returns the Joiner cache information with associated folders, workflows, sessions, mappings, and transformations:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name, c.mapping_name,
+
+d.instance_name transformation_name, DECODE(e.attr_id,10,'data_cache',11,'index_cache',2,'cache_directory') cache_type,
+
+e.attr_value
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b,REP_LOAD_SESSIONS c,REP_WIDGET_INST d, REP_WIDGET_ATTR e
+
+WHERE c.subject_id=a.subject_id AND a.task_type=71 AND a.task_id=b.workflow_id AND b.task_type=68 AND b.task_id=c.session_id
+
+AND c.mapping_id=d.mapping_id AND d.widget_id=e.widget_id
+
+AND d.widget_type=12 AND e.widget_type=12 AND e.attr_id IN (10,11,2)
+
+ORDER BY 1,2,3,4,5,6
+
+PowerCenter query returns the Rank cache information with associated folders, workflows, sessions, mappings, and transformations:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name, c.mapping_name,
+
+d.instance_name transformation_name, DECODE(e.attr_id,6,'data_cache',7,'index_cache', 1,'cache_directory') cache_type, e.attr_value
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b,REP_LOAD_SESSIONS c,REP_WIDGET_INST d, REP_WIDGET_ATTR e
+
+WHERE a.subject_id= c.subject_id AND a.task_type=71 AND a.task_id=b.workflow_id
+
+AND b.task_type=68 AND b.task_id=c.session_id
+
+AND c.mapping_id=d.mapping_id AND d.widget_id=e.widget_id
+
+AND d.widget_type=26 AND e.widget_type=26 AND e.attr_id IN (1,6,7)
+
+ORDER BY 1,2,3,4,5,6
+
+PowerCenter query returns the Sorter cache information with associated folders, workflows, sessions, mappings, and transformations:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name, c.mapping_name,
+
+d.instance_name transformation_name, DECODE(e.attr_id,1,'cache_size', 3,'cache_directory') cache_type, e.attr_value
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b,REP_LOAD_SESSIONS c,REP_WIDGET_INST d, REP_WIDGET_ATTR e
+
+WHERE a.subject_id= c.subject_id AND a.task_type=71 AND a.task_id=b.workflow_id
+
+AND b.task_type=68 AND b.task_id=c.session_id
+
+AND c.mapping_id=d.mapping_id AND d.widget_id=e.widget_id
+
+AND d.widget_type=80 AND e.widget_type=80 AND e.attr_id IN (1,3)
+
+ORDER BY 1,2,3,4,5,6
+
+PowerCenter query returns the Aggregator cache information with associated folders, workflows, sessions, mappings, and transformations:
+
+SELECT c.subject_area folder_name,a.task_name workflow_name,b.instance_name session_name,c.mapping_name,
+
+d.instance_name transformation_name,DECODE(e.attr_id,4,'data_cache',5,'index_cache', 1,'cache_directory') cache_type, e.attr_value
+
+FROM REP_ALL_TASKS a,REP_TASK_INST b, REP_LOAD_SESSIONS c,REP_WIDGET_INST d, REP_WIDGET_ATTR e
+
+WHERE c.subject_id=a.subject_id AND a.task_type=71 AND a.task_id=b.workflow_id AND b.task_type=68
+
+AND b.task_id=c.session_id AND c.mapping_id=d.mapping_id AND d.widget_id=e.widget_id
+
+AND d.widget_type=9 AND e.widget_type=9 AND e.attr_id IN (4,5,1)
+
+ORDER BY 1,2,3,4,5,6
+
+PowerCenter query will return workflow name, task name, and the location for the user-defined event.
+
+SELECT DISTINCT b.task_name as WorkflowName,c.task_name as TaskName, a.attr_value
+
+FROM rep_task_attr a, rep_all_tasks b, rep_all_tasks c
+
+WHERE a.task_id = c.task_id AND
+
+b.task_id = c.task_id AND
+
+a.task_type = 61
+
+AND a.task_id in (SELECT task_id FROM rep_task_attr
+
+WHERE attr_name='User Defined Event')
+
+
+
+PowerCenter query helps to retrieve persisted value for each session:
+
+select distinct e.mapping_name,a.task_name, c.pv_value from
+
+opb_task a,opb_task_inst b,OPB_MAP_PERSISVAL c,opb_Session d,opb_mapping e
+
+where e.mapping_id=c.mapping_id and
+
+c.subject_id=e.subject_id and
+
+b.instance_id=c.session_inst_id and
+
+b.task_id=a.task_id and a.task_type=68 and b.task_type=68 and
+
+a.subject_id=c.subject_id and
+
+d.session_id=a.task_id and
+
+d.session_id=b.task_id and
+
+d.mapping_id=e.mapping_id
+
+PowerCenter query will return all the tasks and sessions within a workflow in a certain folder and also link conditions between each task:
+
+SELECT DISTINCT b.INSTANCE_NAME AS FROM_INST, a.CONDITION as condition_in_bw, c.INSTANCE_NAME AS TO_INST
+
+FROM REP_WORKFLOW_DEP a, REP_TASK_INST b, REP_TASK_INST c
+
+WHERE a.FROM_INSTANCE_ID = b.INSTANCE_ID
+
+AND a.TO_INSTANCE_ID = c.INSTANCE_ID
+
+AND a.WORKFLOW_ID = b.WORKFLOW_ID
+
+AND a.WORKFLOW_ID = c.WORKFLOW_ID
+
+AND b.WORKFLOW_ID in (SELECT WORKFLOW_ID FROM REP_WORKFLOWS WHERE WORKFLOW_NAME = '{WorkflowName}' AND SUBJECT_AREA ='{FolderName}')
+
+PowerCenter query can be run on the PowerCenter repository to find the sessions which are currently running:
+
+SELECT
+
+SESSION_TASK_INST_RUN.SERVER_NAME, SESSION_TASK_REPOSIT_INFO.REPOSITORY_NAME, TO_DATE(TO_CHAR(SESSION_TASK_INST_RUN.END_TIME, 'yyyy-MM-dd'), 'yyyy-MM-dd'), CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 1 THEN 'Succeeded' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 2 THEN 'Disabled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 3 THEN 'Failed' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 4 THEN 'Stopped' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 5 THEN 'Aborted' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 6 THEN 'Running' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 7 THEN 'Suspending' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 8 THEN 'Suspended' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 9 THEN 'Stopping' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 10 THEN 'Aborting' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 11 THEN 'Waiting' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 12 THEN 'Scheduled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 13 THEN 'UnScheduled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 14 THEN 'Unknown' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 15 THEN 'Terminated' ELSE NULL END END END END END END END END END END END END END END END, (COUNT(SESSION_TASK_INST_RUN.TASK_ID))
+
+FROM
+
+REP_TASK_INST_RUN SESSION_TASK_INST_RUN, REP_REPOSIT_INFO SESSION_TASK_REPOSIT_INFO, REP_SESS_LOG SESSION_LOG
+
+WHERE
+
+(SESSION_TASK_INST_RUN.TASK_ID <> SESSION_TASK_REPOSIT_INFO.REPOSITORY_ID AND SESSION_TASK_INST_RUN.TASK_TYPE = 68 AND SESSION_LOG.SESSION_ID = SESSION_TASK_INST_RUN.TASK_ID AND SESSION_LOG.INSTANCE_ID = SESSION_TASK_INST_RUN.INSTANCE_ID AND SESSION_LOG.TASK_VERSION_NUMBER = SESSION_TASK_INST_RUN.TASK_VERSION_NUMBER AND SESSION_LOG.WORKFLOW_ID = SESSION_TASK_INST_RUN.WORKFLOW_ID AND SESSION_LOG.WORKFLOW_VERSION_NUMBER = SESSION_TASK_INST_RUN.VERSION_NUMBER AND SESSION_LOG.WORKFLOW_RUN_ID = SESSION_TASK_INST_RUN.WORKFLOW_RUN_ID AND SESSION_TASK_INST_RUN.TASK_TYPE = 68 ) AND (SESSION_TASK_INST_RUN.END_TIME IS NULL )
+
+GROUP BY
+
+SESSION_TASK_INST_RUN.SERVER_NAME, SESSION_TASK_REPOSIT_INFO.REPOSITORY_NAME, TO_DATE(TO_CHAR(SESSION_TASK_INST_RUN.END_TIME, 'yyyy-MM-dd'), 'yyyy-MM-dd'), CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 1 THEN 'Succeeded' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 2 THEN 'Disabled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 3 THEN 'Failed' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 4 THEN 'Stopped' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 5 THEN 'Aborted' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 6 THEN 'Running' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 7 THEN 'Suspending' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 8 THEN 'Suspended' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 9 THEN 'Stopping' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 10 THEN 'Aborting' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 11 THEN 'Waiting' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 12 THEN 'Scheduled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 13 THEN 'UnScheduled' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 14 THEN 'Unknown' ELSE CASE WHEN SESSION_LOG.RUN_STATUS_CODE = 15 THEN 'Terminated' ELSE NULL END END END END END END END END END END END END END END END
+
+ORDER BY
+
+1, 2, 3, 4
+
+To determine the instance ID of a session task, execute the following query:
+
+select distinct instance_id from REP_TASK_INST_RUN where task_name='' and rownum<2
+
+
+
+
